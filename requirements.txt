@@ -16,5 +16,5 @@ configparser
 dash-chart-editor
 dash-bootstrap-components
 python-dotenv==1.0.0
-```
+
 
