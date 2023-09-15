@@ -96,6 +96,9 @@ app = DashProxy(
     transforms=[ServersideOutputTransform()],
 )
 
+server = app.server
+
+
 # --------- File selection configurations ---------
 name_folder_list = [
     {
