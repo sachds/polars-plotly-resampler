@@ -26,3 +26,4 @@ pyarrow>=6.0.0
 kaleido>=0.2.1
 flask-cors>=3.0.10
 trace-updater==0.0.9.1
+plotly-resampler==0.9.1
