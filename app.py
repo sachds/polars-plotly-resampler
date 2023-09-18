@@ -69,11 +69,11 @@ end_time = time.time()
 elapsed_time = end_time - start_time
 
 # # Fetch data from the database
-engine_temp_stmt = "SELECT Timestamp, EngineTemperature_C FROM main.resamplerdata.auto_iot_bronze_sensors ORDER BY Timestamp ASC LIMIT 10000;"
-oil_pressure_stmt = "SELECT Timestamp, OilPressure_psi FROM main.resamplerdata.auto_iot_bronze_sensors ORDER BY Timestamp ASC LIMIT 10000;"
-speed_stmt = "SELECT Timestamp, 'Speed_km/h' FROM main.resamplerdata.auto_iot_bronze_sensors ORDER BY Timestamp ASC LIMIT  10000;"
-tire_pressure_stmt = "SELECT Timestamp, TirePressure_psi FROM main.resamplerdata.auto_iot_bronze_sensors ORDER BY Timestamp ASC LIMIT 10000;"
-battery_voltage_stmt = "SELECT Timestamp, BatteryVoltage_V FROM main.resamplerdata.auto_iot_bronze_sensors ORDER BY Timestamp ASC LIMIT 10000;"
+engine_temp_stmt = "SELECT Timestamp, EngineTemperature_C FROM main.resamplerdata.auto_iot_bronze_sensors ORDER BY Timestamp ASC LIMIT 10000000;"
+oil_pressure_stmt = "SELECT Timestamp, OilPressure_psi FROM main.resamplerdata.auto_iot_bronze_sensors ORDER BY Timestamp ASC LIMIT 10000000;"
+speed_stmt = "SELECT Timestamp, 'Speed_km/h' FROM main.resamplerdata.auto_iot_bronze_sensors ORDER BY Timestamp ASC LIMIT  10000000;"
+tire_pressure_stmt = "SELECT Timestamp, TirePressure_psi FROM main.resamplerdata.auto_iot_bronze_sensors ORDER BY Timestamp ASC LIMIT 10000000;"
+battery_voltage_stmt = "SELECT Timestamp, BatteryVoltage_V FROM main.resamplerdata.auto_iot_bronze_sensors ORDER BY Timestamp ASC LIMIT 10000000;"
 
 engine_temp_df = pd.read_sql_query(engine_temp_stmt, engine)
 oil_pressure_df = pd.read_sql_query(oil_pressure_stmt, engine)
