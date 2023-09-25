@@ -62,30 +62,67 @@ host = os.getenv("DATABRICKS_HOST")
 path = os.getenv("DATABRICKS_PATH")
 engine_url = f"databricks://token:{token}@{host}/?http_path={path}&catalog=main&schema=information_schema"
 engine = create_engine(engine_url)
-tables_stmt = f"SELECT * FROM main.resamplerdata.auto_iot_bronze_sensors LIMIT 100000;"
-start_time = time.time()
-tables_in_db = pd.read_sql_query(tables_stmt, engine)
-end_time = time.time()
-elapsed_time = end_time - start_time
+# tables_stmt = (
+#     f"SELECT * FROM main.resamplerdata.auto_iot_bronze_sensors_optimized LIMIT 100000;"
+# )
+# start_time = time.time()
+# tables_in_db = pd.read_sql_query(tables_stmt, engine)
+# end_time = time.time()
+# elapsed_time = end_time - start_time
 
 # # Fetch data from the database
-engine_temp_stmt = "SELECT Timestamp, EngineTemperature_C FROM main.resamplerdata.auto_iot_bronze_sensors ORDER BY Timestamp ASC LIMIT 10000000;"
-oil_pressure_stmt = "SELECT Timestamp, OilPressure_psi FROM main.resamplerdata.auto_iot_bronze_sensors ORDER BY Timestamp ASC LIMIT 10000000;"
-speed_stmt = "SELECT Timestamp, 'Speed_km/h' FROM main.resamplerdata.auto_iot_bronze_sensors ORDER BY Timestamp ASC LIMIT  10000000;"
-tire_pressure_stmt = "SELECT Timestamp, TirePressure_psi FROM main.resamplerdata.auto_iot_bronze_sensors ORDER BY Timestamp ASC LIMIT 10000000;"
-battery_voltage_stmt = "SELECT Timestamp, BatteryVoltage_V FROM main.resamplerdata.auto_iot_bronze_sensors ORDER BY Timestamp ASC LIMIT 10000000;"
+# import polars as pl
+import gc
+from sqlalchemy import create_engine
 
-engine_temp_df = pd.read_sql_query(engine_temp_stmt, engine)
-oil_pressure_df = pd.read_sql_query(oil_pressure_stmt, engine)
-speed_df = pd.read_sql_query(speed_stmt, engine)
-tire_pressure_df = pd.read_sql_query(tire_pressure_stmt, engine)
-battery_voltage_df = pd.read_sql_query(battery_voltage_stmt, engine)
 
-engine_temp_df.to_parquet(f"backend-data/engine_temp_df.parquet")
-oil_pressure_df.to_parquet(f"backend-data/oil_pressure_df.parquet")
-speed_df.to_parquet(f"backend-data/speed_df.parquet")
-tire_pressure_df.to_parquet(f"backend-data/tire_pressure_df.parquet")
+# SQL statements (unchanged)
+
+engine_temp_stmt = "SELECT Timestamp, EngineTemperature_C FROM main.resamplerdata.auto_iot_bronze_sensors;"
+oil_pressure_stmt = (
+    "SELECT Timestamp, OilPressure_psi FROM main.resamplerdata.auto_iot_bronze_sensors;"
+)
+speed_stmt = (
+    "SELECT Timestamp, 'Speed_km/h' FROM main.resamplerdata.auto_iot_bronze_sensors;"
+)
+tire_pressure_stmt = "SELECT Timestamp, TirePressure_psi FROM main.resamplerdata.auto_iot_bronze_sensors;"
+battery_voltage_stmt = "SELECT Timestamp, BatteryVoltage_V FROM main.resamplerdata.auto_iot_bronze_sensors;"
+
+
+# Read data from SQL queries into Polars dataframes
+query_start_time = time.time()
+engine_temp_df = pd.read_sql(engine_temp_stmt, engine)
+oil_pressure_df = pd.read_sql(oil_pressure_stmt, engine)
+speed_df = pd.read_sql(speed_stmt, engine)
+tire_pressure_df = pd.read_sql(tire_pressure_stmt, engine)
+battery_voltage_df = pd.read_sql(battery_voltage_stmt, engine)
+query_end_time = time.time()
+
+print(f"Query time: {query_end_time - query_start_time} seconds")
+
+# Save dataframes as Parquet files
+parquet_start_time = time.time()
+
+engine_temp_df.to_parquet("backend-data/engine_temp_df.parquet")
+oil_pressure_df.to_parquet("backend-data/oil_pressure_df.parquet")
+speed_df.to_parquet("backend-data/speed_df.parquet")
+tire_pressure_df.to_parquet("backend-data/tire_pressure_df.parquet")
+battery_voltage_df.to_parquet("backend-data/battery_voltage_df.parquet")
+
 battery_voltage_df.to_parquet(f"backend-data/battery_voltage_df.parquet")
+
+parquet_end_time = time.time()
+
+print(f"Parquet time: {parquet_end_time - parquet_start_time} seconds")
+
+del engine_temp_df
+del oil_pressure_df
+del speed_df
+del tire_pressure_df
+del battery_voltage_df
+
+# Collect garbage to reclaim memory
+gc.collect()
 
 
 # --------------------------------------Globals ---------------------------------------
@@ -149,69 +186,6 @@ app.layout = ddk.App(
     ]
 )
 
-# display_options_all = ["Datashader", "Plotly"]
-# display_options_no_plotly = ["Datashader"]
-
-# datashader_layout = dbc.Container(
-#     ddk.Card(
-#         children=[
-#             ddk.CardHeader(
-#                 title="Time series",
-#             ),
-#             html.P(
-#                 "The figure below displays 24 time series traces with 1 million points each, visualized using Datashader."
-#             ),
-#             html.P(
-#                 "Each time series trace has a different set of x-axis values; this can be seen most clearly by zooming in. "
-#                 + "The Plotly traces have been left with the gaps unconnected to clearly demonstrate the presence of different x-values, but these gaps can easily be connected by changing the plot settings."
-#             ),
-#             html.P(
-#                 "Two of these traces have intentionally been set with a larger y-axis range. In order to plot all of the traces on the same graph, there are 2 sets of y-axes with different ranges."
-#                 + "Hovering over a trace will identify its correct y-value."
-#             ),
-#             html.P(
-#                 "When zoomed in to an x-range of less than 10,000 time instants, the chart switches to using native Plotly traces, "
-#                 + "which offer more features, including advanced hover data options. Note that the two sets of y-axes are preserved."
-#                 + "We can also manually toggle back and forth between Datashader and Plotly traces to compare the two."
-#             ),
-#             html.P(
-#                 [
-#                     "Currently viewing: ",
-#                     html.B(f"{len(df_big):,}", id="n-rows-text"),
-#                     " time instants",
-#                 ]
-#             ),
-#             html.P(
-#                 [
-#                     "Render chart using: ",
-#                     dcc.RadioItems(
-#                         id="display-method-radio",
-#                         options=display_options_no_plotly,
-#                         value="Datashader",
-#                     ),
-#                 ]
-#             ),
-#             dmc.LoadingOverlay(
-#                 ddk.Graph(
-#                     figure=create_plot_datashader(df_big),
-#                     id="line-chart",
-#                     style={"height": "calc(100vh - 400px)"},
-#                 ),
-#                 overlayOpacity=0.25,
-#                 overlayColor="#292943",
-#                 loaderProps={"color": "#F5F7FA"},
-#             ),
-#             dmc.Button(
-#                 "Reset chart",
-#                 variant="outline",
-#                 id="reset",
-#                 fullWidth=True,
-#                 style={"margin-top": "10px"},
-#             ),
-#         ]
-#     ),
-#     dcc.Store(id="relayout-data-store", data={}),
-# )
 
 multifile_layout = dbc.Container(
     [
@@ -474,6 +448,7 @@ dfs = [pd.read_parquet(file) for file in parquet_file_paths]
 start_time = time.time()  # Record start time
 
 combined_df = pd.concat(dfs, ignore_index=True)
+sorted_df = combined_df.sort_values(by="Timestamp", ascending=True)
 
 
 # This method constructs the FigureResampler graph and caches it on the server side
@@ -491,28 +466,28 @@ def construct_display_graph(n_clicks, n_intervals) -> FigureResampler:
     # sigma = n_clicks * 1e-6
     fig.add_trace(
         dict(name="Temperature (C)"),
-        hf_x=combined_df["Timestamp"],
-        hf_y=combined_df["EngineTemperature_C"],
+        hf_x=sorted_df["Timestamp"],
+        hf_y=sorted_df["EngineTemperature_C"],
     )
     fig.add_trace(
         dict(name="Oil Pressure (psi)"),
-        hf_x=combined_df["Timestamp"],
-        hf_y=combined_df["OilPressure_psi"],
+        hf_x=sorted_df["Timestamp"],
+        hf_y=sorted_df["OilPressure_psi"],
     )
-    fig.add_trace(
-        dict(name="Speed (kmh)"),
-        hf_x=combined_df["Timestamp"],
-        hf_y=combined_df["Speed_kmh"],
-    )
+    # fig.add_trace(
+    #     dict(name="Speed (kmh)"),
+    #     hf_x=combined_df["Timestamp"],
+    #     hf_y=combined_df["Speed_kmh"],
+    # )
     fig.add_trace(
         dict(name="Tire Pressure (psi)"),
-        hf_x=combined_df["Timestamp"],
-        hf_y=combined_df["TirePressure_psi"],
+        hf_x=sorted_df["Timestamp"],
+        hf_y=sorted_df["TirePressure_psi"],
     )
     fig.add_trace(
         dict(name="Battery Voltage (V)"),
-        hf_x=combined_df["Timestamp"],
-        hf_y=combined_df["BatteryVoltage_V"],
+        hf_x=sorted_df["Timestamp"],
+        hf_y=sorted_df["BatteryVoltage_V"],
     )
     fig.update_layout(
         title=f"<b>Temperature, Oil Pressure, Tire Pressure, and Battery Voltage - {n_clicks}</b>",
