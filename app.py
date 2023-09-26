@@ -78,11 +78,13 @@ from sqlalchemy import create_engine
 
 # SQL statements (unchanged)
 
-engine_temp_stmt = "SELECT Timestamp, EngineTemperature FROM main.resamplerdata.auto_iot_bronze_sensors LIMIT 500000;"
-oil_pressure_stmt = "SELECT Timestamp, OilPressure FROM main.resamplerdata.auto_iot_bronze_sensors LIMIT 500000;"
-speed_stmt = "SELECT Timestamp, Speed FROM main.resamplerdata.auto_iot_bronze_sensors LIMIT 500000;"
-tire_pressure_stmt = "SELECT Timestamp, TirePressure FROM main.resamplerdata.auto_iot_bronze_sensors LIMIT 500000;"
-battery_voltage_stmt = "SELECT Timestamp, BatteryVoltage FROM main.resamplerdata.auto_iot_bronze_sensors LIMIT 500000;"
+engine_temp_stmt = "SELECT Timestamp, EngineTemperature_C FROM main.resamplerdata.auto_iot_data_bronze_sensors;"
+oil_pressure_stmt = "SELECT Timestamp, OilPressure_psi FROM main.resamplerdata.auto_iot_data_bronze_sensors;"
+speed_stmt = (
+    "SELECT Timestamp, Speed_kmh FROM main.resamplerdata.auto_iot_data_bronze_sensors;"
+)
+tire_pressure_stmt = "SELECT Timestamp, TirePressure_psi FROM main.resamplerdata.auto_iot_data_bronze_sensors;"
+battery_voltage_stmt = "SELECT Timestamp, BatteryVoltage_V FROM main.resamplerdata.auto_iot_data_bronze_sensors;"
 
 
 # Read data from SQL queries into Polars dataframes
@@ -444,7 +446,6 @@ dfs = [pd.read_parquet(file) for file in parquet_file_paths]
 start_time = time.time()  # Record start time
 
 combined_df = pd.concat(dfs, ignore_index=True)
-sorted_df = combined_df.sort_values(by="Timestamp", ascending=True)
 
 
 # This method constructs the FigureResampler graph and caches it on the server side
@@ -462,28 +463,28 @@ def construct_display_graph(n_clicks, n_intervals) -> FigureResampler:
     # sigma = n_clicks * 1e-6
     fig.add_trace(
         dict(name="Temperature (C)"),
-        hf_x=sorted_df["Timestamp"],
-        hf_y=sorted_df["EngineTemperature"],
+        hf_x=combined_df["Timestamp"],
+        hf_y=combined_df["EngineTemperature_C"],
     )
     fig.add_trace(
         dict(name="Oil Pressure (psi)"),
-        hf_x=sorted_df["Timestamp"],
-        hf_y=sorted_df["OilPressure"],
+        hf_x=combined_df["Timestamp"],
+        hf_y=combined_df["OilPressure_psi"],
     )
     fig.add_trace(
         dict(name="Speed (kmh)"),
         hf_x=combined_df["Timestamp"],
-        hf_y=combined_df["Speed"],
+        hf_y=combined_df["Speed_kmh"],
     )
     fig.add_trace(
         dict(name="Tire Pressure (psi)"),
-        hf_x=sorted_df["Timestamp"],
-        hf_y=sorted_df["TirePressure"],
+        hf_x=combined_df["Timestamp"],
+        hf_y=combined_df["TirePressure_psi"],
     )
     fig.add_trace(
         dict(name="Battery Voltage (V)"),
-        hf_x=sorted_df["Timestamp"],
-        hf_y=sorted_df["BatteryVoltage"],
+        hf_x=combined_df["Timestamp"],
+        hf_y=combined_df["BatteryVoltage_V"],
     )
     fig.update_layout(
         title=f"<b>Temperature, Oil Pressure, Tire Pressure, and Battery Voltage - {n_clicks}</b>",
