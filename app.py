@@ -469,27 +469,27 @@ def construct_display_graph(n_clicks, n_intervals) -> FigureResampler:
     fig.add_trace(
         dict(name="Temperature (C)"),
         hf_x=sorted_df["Timestamp"],
-        hf_y=sorted_df["EngineTemperature_C"],
+        hf_y=sorted_df["EngineTemperature"],
     )
     fig.add_trace(
         dict(name="Oil Pressure (psi)"),
         hf_x=sorted_df["Timestamp"],
-        hf_y=sorted_df["OilPressure_psi"],
+        hf_y=sorted_df["OilPressure"],
     )
-    # fig.add_trace(
-    #     dict(name="Speed (kmh)"),
-    #     hf_x=combined_df["Timestamp"],
-    #     hf_y=combined_df["Speed_kmh"],
-    # )
+    fig.add_trace(
+        dict(name="Speed (kmh)"),
+        hf_x=combined_df["Timestamp"],
+        hf_y=combined_df["Speed"],
+    )
     fig.add_trace(
         dict(name="Tire Pressure (psi)"),
         hf_x=sorted_df["Timestamp"],
-        hf_y=sorted_df["TirePressure_psi"],
+        hf_y=sorted_df["TirePressure"],
     )
     fig.add_trace(
         dict(name="Battery Voltage (V)"),
         hf_x=sorted_df["Timestamp"],
-        hf_y=sorted_df["BatteryVoltage_V"],
+        hf_y=sorted_df["BatteryVoltage"],
     )
     fig.update_layout(
         title=f"<b>Temperature, Oil Pressure, Tire Pressure, and Battery Voltage - {n_clicks}</b>",
