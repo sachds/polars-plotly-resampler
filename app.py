@@ -74,6 +74,11 @@ engine = create_engine(engine_url)
 # import polars as pl
 import gc
 from sqlalchemy import create_engine
+import os
+
+directory = "backend-data"
+if not os.path.exists(directory):
+    os.makedirs(directory)
 
 
 # SQL statements (unchanged)
