@@ -77,7 +77,12 @@ from sqlalchemy import create_engine
 import os
 
 directory = "backend-data"
-if not os.path.exists(directory):
+if os.path.exists(directory):
+    if os.path.isfile(directory):
+        raise ValueError(
+            f"'{directory}' already exists but is a file, not a directory."
+        )
+else:
     os.makedirs(directory)
 
 
