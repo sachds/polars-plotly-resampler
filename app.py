@@ -78,11 +78,17 @@ from sqlalchemy import create_engine
 
 # SQL statements (unchanged)
 
-engine_temp_stmt = "SELECT Timestamp, EngineTemperature FROM main.resamplerdata.auto_iot_bronze_sensors LIMIT 100000;"
-oil_pressure_stmt = "SELECT Timestamp, OilPressure FROM main.resamplerdata.auto_iot_bronze_sensors LIMIT 100000;"
-speed_stmt = "SELECT Timestamp, Speed FROM main.resamplerdata.auto_iot_bronze_sensors LIMIT 100000;"
-tire_pressure_stmt = "SELECT Timestamp, TirePressure FROM main.resamplerdata.auto_iot_bronze_sensors LIMIT 100000;"
-battery_voltage_stmt = "SELECT Timestamp, BatteryVoltage FROM main.resamplerdata.auto_iot_bronze_sensors LIMIT 100000;"
+engine_temp_stmt = "SELECT Timestamp, EngineTemperature FROM main.resamplerdata.auto_iot_bronze_sensors;"
+oil_pressure_stmt = (
+    "SELECT Timestamp, OilPressure FROM main.resamplerdata.auto_iot_bronze_sensors;"
+)
+speed_stmt = "SELECT Timestamp, Speed FROM main.resamplerdata.auto_iot_bronze_sensors;"
+tire_pressure_stmt = (
+    "SELECT Timestamp, TirePressure FROM main.resamplerdata.auto_iot_bronze_sensors ;"
+)
+battery_voltage_stmt = (
+    "SELECT Timestamp, BatteryVoltage FROM main.resamplerdata.auto_iot_bronze_sensors;"
+)
 
 
 # Read data from SQL queries into Polars dataframes
