@@ -81,7 +81,10 @@ if os.path.exists(directory):
     if os.path.isfile(directory):
         os.remove(directory)  # Remove the file if it's a file
     else:
-        shutil.rmtree(directory)  # Remove the directory and its contents
+        try:
+            shutil.rmtree(directory)  # Remove the directory and its contents
+        except FileNotFoundError:
+            pass  # Directory already removed
 
 os.makedirs(directory)
 
