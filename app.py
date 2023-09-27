@@ -73,15 +73,17 @@ engine = create_engine(engine_url)
 import gc
 from sqlalchemy import create_engine
 import os
+import shutil
 
 directory = "backend-data"
+
 if os.path.exists(directory):
     if os.path.isfile(directory):
-        raise ValueError(
-            f"'{directory}' already exists but is a file, not a directory."
-        )
-else:
-    os.makedirs(directory)
+        os.remove(directory)  # Remove the file if it's a file
+    else:
+        shutil.rmtree(directory)  # Remove the directory and its contents
+
+os.makedirs(directory)
 
 
 # SQL statements (unchanged)
