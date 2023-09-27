@@ -72,11 +72,13 @@ engine = create_engine(engine_url)
 # import polars as pl
 import gc
 from sqlalchemy import create_engine
+
 import os
 import shutil
 
 directory = "backend-data"
 
+# If the directory or file exists, try to remove it
 if os.path.exists(directory):
     if os.path.isfile(directory):
         os.remove(directory)  # Remove the file if it's a file
@@ -86,7 +88,11 @@ if os.path.exists(directory):
         except FileNotFoundError:
             pass  # Directory already removed
 
-os.makedirs(directory)
+# Attempt to create the directory, catching a FileExistsError
+try:
+    os.makedirs(directory)
+except FileExistsError:
+    pass
 
 
 # SQL statements (unchanged)
