@@ -97,11 +97,11 @@ except FileExistsError:
 
 # SQL statements (unchanged)
 
-engine_temp_stmt = "SELECT Timestamp, EngineTemperature_C FROM main.resamplerdata.auto_iot_data_bronze_sensors LIMIT 3000000;"
-oil_pressure_stmt = "SELECT Timestamp, OilPressure_psi FROM main.resamplerdata.auto_iot_data_bronze_sensors LIMIT 3000000;"
-speed_stmt = "SELECT Timestamp, Speed_kmh FROM main.resamplerdata.auto_iot_data_bronze_sensors LIMIT 3000000;"
-tire_pressure_stmt = "SELECT Timestamp, TirePressure_psi FROM main.resamplerdata.auto_iot_data_bronze_sensors LIMIT 3000000;"
-battery_voltage_stmt = "SELECT Timestamp, BatteryVoltage_V FROM main.resamplerdata.auto_iot_data_bronze_sensors LIMIT 3000000;"
+engine_temp_stmt = "SELECT Timestamp, EngineTemperature_C FROM main.resamplerdata.auto_iot_data_bronze_sensors LIMIT 5000000;"
+oil_pressure_stmt = "SELECT Timestamp, OilPressure_psi FROM main.resamplerdata.auto_iot_data_bronze_sensors LIMIT 5000000;"
+speed_stmt = "SELECT Timestamp, Speed_kmh FROM main.resamplerdata.auto_iot_data_bronze_sensors LIMIT 5000000;"
+tire_pressure_stmt = "SELECT Timestamp, TirePressure_psi FROM main.resamplerdata.auto_iot_data_bronze_sensors LIMIT 5000000;"
+battery_voltage_stmt = "SELECT Timestamp, BatteryVoltage_V FROM main.resamplerdata.auto_iot_data_bronze_sensors LIMIT 5000000;"
 
 
 # Read data from SQL queries into Polars dataframes
