@@ -17,8 +17,6 @@ from pathlib import Path
 from typing import List
 import dash_design_kit as ddk
 import dash_mantine_components as dmc
-import dash
-import plotly_express as px
 import os
 from dotenv import load_dotenv
 
