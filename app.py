@@ -14,7 +14,7 @@ TODO: add an rectangle on the coarse graph
 __author__ = "Jonas Van Der Donckt"
 
 from pathlib import Path
-from typing import List
+from typing import List     
 import dash_design_kit as ddk
 import dash_mantine_components as dmc
 import os
@@ -89,12 +89,15 @@ match = re.match(pattern, dtype_str)
 print(match)
 
 directory = "backend-data"
+
 def all_files_exist(directory, statements):
     return all(os.path.exists(os.path.join(directory, f"{name}.arrow")) for name in statements)
-# Create the directory if it doesn't exist
-if not os.path.exists(directory):
-    os.makedirs(directory)
 
+# Create the directory if it doesn't exist
+try:
+    os.makedirs(directory)
+except FileExistsError:
+    pass
 
 # Your database connection (e.g., SQLite, PostgreSQL, etc.)
 
@@ -443,7 +446,7 @@ def add_graph_div(n_clicks: int, div_children: List[html.Div]):
             ),
             dcc.Store(id={"type": "store", "index": uid}),
             TraceUpdater(id={"type": "dynamic-updater", "index": uid}, gdID=f"{uid}"),
-            # This dcc.Interval components makes sure that the `construct_display_graph`
+            # This dcc.Interval compo nents makes sure that the `construct_display_graph`
             # callback is fired once after these components are added to the session
             # its front-end
             dcc.Interval(
