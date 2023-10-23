@@ -13,22 +13,22 @@ from functional import seq
 import dash_design_kit as ddk
 import dash_mantine_components as dmc
 
+from pathlib import Path
+
 
 def _update_file_widget(folder):
     if folder is None:
         return []
-    return [
-        {"label": filename, "value": filename}
-        for filename in sorted(
-            set(
-                list(
-                    seq(Path(folder).iterdir())
-                    .filter(lambda x: x.is_file() and x.name.endswith("parquet"))
-                    .map(lambda x: x.name)
-                )
-            )
-        )
+
+    arrow_files = [
+        file.name
+        for file in Path(folder).iterdir()
+        if file.is_file() and file.name.endswith(".arrow")
     ]
+
+    sorted_files = sorted(set(arrow_files))
+
+    return [{"label": filename, "value": filename} for filename in sorted_files]
 
 
 def _register_selection_callbacks(app, ids=None):

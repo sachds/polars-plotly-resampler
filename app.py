@@ -72,72 +72,78 @@ engine = create_engine(engine_url)
 # import polars as pl
 import gc
 from sqlalchemy import create_engine
-
 import os
 import shutil
+import pandas as pd
+import pyarrow as pa
+import time
+
+import re
+
+print(re.compile(r"(?i)utf8").match("Utf8"))  # should return a match object
+
+
+dtype_str = "Float64"
+pattern = r"(?i)float\d*"
+match = re.match(pattern, dtype_str)
+print(match)
 
 directory = "backend-data"
-
-# If the directory or file exists, try to remove it
-if os.path.exists(directory):
-    if os.path.isfile(directory):
-        os.remove(directory)  # Remove the file if it's a file
-    else:
-        try:
-            shutil.rmtree(directory)  # Remove the directory and its contents
-        except FileNotFoundError:
-            pass  # Directory already removed
-
-# Attempt to create the directory, catching a FileExistsError
-try:
+def all_files_exist(directory, statements):
+    return all(os.path.exists(os.path.join(directory, f"{name}.arrow")) for name in statements)
+# Create the directory if it doesn't exist
+if not os.path.exists(directory):
     os.makedirs(directory)
-except FileExistsError:
-    pass
 
+
+# Your database connection (e.g., SQLite, PostgreSQL, etc.)
 
 # SQL statements (unchanged)
-
-engine_temp_stmt = "SELECT Timestamp, EngineTemperature_C FROM main.resamplerdata.auto_iot_data_bronze_sensors LIMIT 5000000;"
-oil_pressure_stmt = "SELECT Timestamp, OilPressure_psi FROM main.resamplerdata.auto_iot_data_bronze_sensors LIMIT 5000000;"
-speed_stmt = "SELECT Timestamp, Speed_kmh FROM main.resamplerdata.auto_iot_data_bronze_sensors LIMIT 5000000;"
-tire_pressure_stmt = "SELECT Timestamp, TirePressure_psi FROM main.resamplerdata.auto_iot_data_bronze_sensors LIMIT 5000000;"
-battery_voltage_stmt = "SELECT Timestamp, BatteryVoltage_V FROM main.resamplerdata.auto_iot_data_bronze_sensors LIMIT 5000000;"
-
-
-# Read data from SQL queries into Polars dataframes
+statements = {
+    "engine_temp": "SELECT Timestamp, EngineTemperature_C FROM main.resamplerdata.automobile_iot_data_bronze_sensors_1b LIMIT 20000000;",
+    "oil_pressure": "SELECT Timestamp, OilPressure_psi FROM main.resamplerdata.automobile_iot_data_bronze_sensors_1b LIMIT 20000000;",
+    "speed": "SELECT Timestamp, Speed_kmh FROM main.resamplerdata.automobile_iot_data_bronze_sensors_1b LIMIT 20000000;",
+    "tire_pressure": "SELECT Timestamp, TirePressure_psi FROM main.resamplerdata.automobile_iot_data_bronze_sensors_1b LIMIT 20000000;",
+    "battery_voltage": "SELECT Timestamp, BatteryVoltage_V FROM main.resamplerdata.automobile_iot_data_bronze_sensors_1b LIMIT 20000000;",
+    "BrakePadWear_percent": "SELECT Timestamp, BrakePadWear_percent FROM main.resamplerdata.automobile_iot_data_bronze_sensors_1b LIMIT 20000000;",
+    "AmbientTemperature_C": "SELECT Timestamp, AmbientTemperature_C FROM main.resamplerdata.automobile_iot_data_bronze_sensors_1b LIMIT 20000000;",
+    "Odometer_km": "SELECT Timestamp, Odometer_km FROM main.resamplerdata.automobile_iot_data_bronze_sensors_1b LIMIT 20000000;",
+    "EngineLoad_percent": "SELECT Timestamp, EngineLoad_percent FROM main.resamplerdata.automobile_iot_data_bronze_sensors_1b LIMIT 20000000;",
+    "AirFlowRate_gs": "SELECT Timestamp, AirFlowRate_gs FROM main.resamplerdata.automobile_iot_data_bronze_sensors_1b LIMIT 200000000",
+    "ThrottlePosition_percent": "SELECT Timestamp, ThrottlePosition_percent FROM main.resamplerdata.automobile_iot_data_bronze_sensors_1b LIMIT 20000000;",
+    "EngineRPM": "SELECT Timestamp, EngineRPM FROM main.resamplerdata.automobile_iot_data_bronze_sensors_1b LIMIT 20000000;",
+    "Acceleration_ms2": "SELECT Timestamp, Acceleration_ms2 FROM main.resamplerdata.automobile_iot_data_bronze_sensors_1b LIMIT 20000000;",
+    "GearPosition": "SELECT Timestamp, GearPosition FROM main.resamplerdata.automobile_iot_data_bronze_sensors_1b LIMIT 20000000;",
+    "SteeringAngle_degree": "SELECT Timestamp, SteeringAngle_degree FROM main.resamplerdata.automobile_iot_data_bronze_sensors_1b LIMIT 20000000;",
+    "CoolantTemperature_C": "SELECT Timestamp, CoolantTemperature_C FROM main.resamplerdata.automobile_iot_data_bronze_sensors_1b LIMIT 20000000;",
+    "FuelRate_Lh": "SELECT Timestamp, FuelRate_Lh FROM main.resamplerdata.automobile_iot_data_bronze_sensors_1b LIMIT 20000000;",
+    "Altitude_m": "SELECT Timestamp, Altitude_m FROM main.resamplerdata.automobile_iot_data_bronze_sensors_1b LIMIT 20000000;",
+}
 query_start_time = time.time()
-engine_temp_df = pd.read_sql(engine_temp_stmt, engine)
-oil_pressure_df = pd.read_sql(oil_pressure_stmt, engine)
-speed_df = pd.read_sql(speed_stmt, engine)
-tire_pressure_df = pd.read_sql(tire_pressure_stmt, engine)
-battery_voltage_df = pd.read_sql(battery_voltage_stmt, engine)
+
+# Read data from SQL queries into Pandas dataframes, convert to Arrow tables, and save as Arrow IPC files, but only for files that don't exist
+for name, stmt in statements.items():
+    arrow_file_path = os.path.join(directory, f"{name}.arrow")
+    if not os.path.exists(arrow_file_path):
+        df = pd.read_sql(stmt, engine)
+        table = pa.Table.from_pandas(df)
+        with pa.OSFile(arrow_file_path, "wb") as sink:
+            with pa.RecordBatchFileWriter(sink, table.schema) as writer:
+                writer.write_table(table)
+
 query_end_time = time.time()
 
-print(f"Query time: {query_end_time - query_start_time} seconds")
+print(f"Arrow IPC time: {query_end_time - query_start_time} seconds")
 
-# Save dataframes as Parquet files
-parquet_start_time = time.time()
 
-engine_temp_df.to_parquet("backend-data/engine_temp_df.parquet")
-oil_pressure_df.to_parquet("backend-data/oil_pressure_df.parquet")
-speed_df.to_parquet("backend-data/speed_df.parquet")
-tire_pressure_df.to_parquet("backend-data/tire_pressure_df.parquet")
-battery_voltage_df.to_parquet("backend-data/battery_voltage_df.parquet")
+# del engine_temp_df
+# del oil_pressure_df
+# del speed_df
+# del tire_pressure_df
+# del battery_voltage_df
 
-battery_voltage_df.to_parquet(f"backend-data/battery_voltage_df.parquet")
-
-parquet_end_time = time.time()
-
-print(f"Parquet time: {parquet_end_time - parquet_start_time} seconds")
-
-del engine_temp_df
-del oil_pressure_df
-del speed_df
-del tire_pressure_df
-del battery_voltage_df
-
-# Collect garbage to reclaim memory
-gc.collect()
+# # Collect garbage to reclaim memory
+# gc.collect()
 
 
 # --------------------------------------Globals ---------------------------------------
@@ -449,20 +455,38 @@ def add_graph_div(n_clicks: int, div_children: List[html.Div]):
     return div_children
 
 
-# Specify the path to the folder containing Parquet files
-parquet_folder_path = "backend-data"
-# Get a list of all Parquet file paths in the folder
-parquet_file_paths = [
-    os.path.join(parquet_folder_path, file)
-    for file in os.listdir(parquet_folder_path)
-    if file.endswith(".parquet")
+import os
+import polars as pl
+import time
+
+arrow_folder_path = "backend-data"
+
+# Get a list of all Arrow file paths in the folder
+arrow_file_paths = [
+    os.path.join(arrow_folder_path, file)
+    for file in os.listdir(arrow_folder_path)
+    if file.endswith(".arrow")
 ]
 
-# Read all Parquet files into a single pandas DataFrame
-dfs = [pd.read_parquet(file) for file in parquet_file_paths]
-start_time = time.time()  # Record start time
+# Read the first Arrow file into a base DataFrame
+combined_df = pl.read_ipc(arrow_file_paths[0])
 
-combined_df = pd.concat(dfs, ignore_index=True)
+# Assuming `combined_df` is already loaded
+combined_df = combined_df.with_columns(combined_df["Timestamp"].cast(pl.datatypes.Int64))
+
+for file in arrow_file_paths[1:]:
+    df = pl.read_ipc(file)
+    df = df.with_columns(df["Timestamp"].cast(pl.datatypes.Int64))
+    combined_df = combined_df.join(df, on="Timestamp", how="left")
+
+# Sort after all joins are done
+combined_df_sorted = combined_df.sort("Timestamp")
+
+
+start_time = time.time()  # Record start time
+print(f"Elapsed time: {time.time() - start_time} seconds")
+
+# Rest of your app logic remains the same
 
 
 # This method constructs the FigureResampler graph and caches it on the server side
@@ -480,29 +504,95 @@ def construct_display_graph(n_clicks, n_intervals) -> FigureResampler:
     # sigma = n_clicks * 1e-6
     fig.add_trace(
         dict(name="Temperature (C)"),
-        hf_x=combined_df["Timestamp"],
-        hf_y=combined_df["EngineTemperature_C"],
+        hf_x=combined_df_sorted["Timestamp"],
+        hf_y=combined_df_sorted["EngineTemperature_C"],
     )
     fig.add_trace(
         dict(name="Oil Pressure (psi)"),
-        hf_x=combined_df["Timestamp"],
-        hf_y=combined_df["OilPressure_psi"],
+        hf_x=combined_df_sorted["Timestamp"],
+        hf_y=combined_df_sorted["OilPressure_psi"],
     )
     fig.add_trace(
         dict(name="Speed (kmh)"),
-        hf_x=combined_df["Timestamp"],
-        hf_y=combined_df["Speed_kmh"],
+        hf_x=combined_df_sorted["Timestamp"],
+        hf_y=combined_df_sorted["Speed_kmh"],
     )
     fig.add_trace(
         dict(name="Tire Pressure (psi)"),
-        hf_x=combined_df["Timestamp"],
-        hf_y=combined_df["TirePressure_psi"],
+        hf_x=combined_df_sorted["Timestamp"],
+        hf_y=combined_df_sorted["TirePressure_psi"],
     )
     fig.add_trace(
         dict(name="Battery Voltage (V)"),
-        hf_x=combined_df["Timestamp"],
-        hf_y=combined_df["BatteryVoltage_V"],
+        hf_x=combined_df_sorted["Timestamp"],
+        hf_y=combined_df_sorted["BatteryVoltage_V"],
     )
+    fig.add_trace(
+        dict(name="Brake Pad Wear (%)"),
+        hf_x=combined_df_sorted["Timestamp"],
+        hf_y=combined_df_sorted["BrakePadWear_percent"],
+    )
+    fig.add_trace(
+        dict(name="Ambient Temperature (C)"),
+        hf_x=combined_df_sorted["Timestamp"],
+        hf_y=combined_df_sorted["AmbientTemperature_C"],
+    )
+    fig.add_trace(
+        dict(name="Odometer (km)"),
+        hf_x=combined_df_sorted["Timestamp"],
+        hf_y=combined_df_sorted["Odometer_km"],
+    )
+    fig.add_trace(
+        dict(name="Engine Load (%)"),
+        hf_x=combined_df_sorted["Timestamp"],
+        hf_y=combined_df_sorted["EngineLoad_percent"],
+    )
+    fig.add_trace(
+        dict(name="Air Flow Rate (gs)"),
+        hf_x=combined_df_sorted["Timestamp"],
+        hf_y=combined_df_sorted["AirFlowRate_gs"],
+    )
+    fig.add_trace(
+        dict(name="Throttle Position (%)"),
+        hf_x=combined_df_sorted["Timestamp"],
+        hf_y=combined_df_sorted["ThrottlePosition_percent"],
+    )
+    fig.add_trace(
+        dict(name="Engine RPM"),
+        hf_x=combined_df_sorted["Timestamp"],
+        hf_y=combined_df_sorted["EngineRPM"],
+    )
+    fig.add_trace(
+        dict(name="Acceleration (ms2)"),
+        hf_x=combined_df_sorted["Timestamp"],
+        hf_y=combined_df_sorted["Acceleration_ms2"],
+    )
+    fig.add_trace(
+        dict(name="Gear Position"),
+        hf_x=combined_df_sorted["Timestamp"],
+        hf_y=combined_df_sorted["GearPosition"],
+    )
+    fig.add_trace(
+        dict(name="Steering Angle (degree)"),
+        hf_x=combined_df_sorted["Timestamp"],
+        hf_y=combined_df_sorted["SteeringAngle_degree"],
+    )
+    fig.add_trace(
+        dict(name="Coolant Temperature (C)"),
+        hf_x=combined_df_sorted["Timestamp"],
+        hf_y=combined_df_sorted["CoolantTemperature_C"],
+    )
+    fig.add_trace(
+        dict(name="Fuel Rate (Lh)"),
+        hf_x=combined_df_sorted["Timestamp"],
+        hf_y=combined_df_sorted["FuelRate_Lh"],
+    )
+    fig.add_trace(
+        dict(name="Altitude (m)"),
+        hf_x=combined_df_sorted["Timestamp"],
+        hf_y=combined_df_sorted["Altitude_m"],
+    )
+
     fig.update_layout(
         title=f"<b>Temperature, Oil Pressure, Tire Pressure, and Battery Voltage - {n_clicks}</b>",
         title_x=0.5,
