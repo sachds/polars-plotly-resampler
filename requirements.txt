@@ -28,4 +28,4 @@ flask-cors>=3.0.10
 trace-updater==0.0.9.1
 plotly-resampler==0.9.1
 polars==0.19.3
-polars_plotly_resampler.tar.gz
+db_polars_plotly_resampler.tar.gz
